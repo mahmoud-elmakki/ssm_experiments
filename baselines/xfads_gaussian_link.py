@@ -5,14 +5,11 @@ from tqdm import tqdm
 
 from scipy.ndimage import gaussian_filter1d
 
-import seaborn as sns
 import matplotlib.pyplot as plt
 
 from matplotlib import cm
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
-
-from IPython.display import Video
 
 import torch
 import torch.nn as nn
@@ -40,7 +37,7 @@ from xfads.ssm_modules.encoders import LocalEncoderLRMvn, BackwardEncoderLRMvn
 from xfads.smoothers.lightning_trainers import LightningNonlinearSSM, LightningMonkeyReaching
 from xfads.smoothers.nonlinear_smoother_causal import NonlinearFilter, LowRankNonlinearStateSpaceModel
 
-from xfads.ssm_modules.prebuilt_models import create_xfads_poisson_log_link
+
 
 if torch.cuda.is_available():
     import os
@@ -48,7 +45,6 @@ if torch.cuda.is_available():
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 
-    
 class Cfg(dict):
     def __getattr__(self, attr):
         if attr in self:
@@ -85,12 +81,12 @@ def main():
         'p_backward_dropout': 0.0,
 
         # --- training --- #
-        'device': 'cpu',
-        'data_device': 'cpu',
+        'device': 'cuda',
+        'data_device': 'cuda',
 
         'lr': 1e-3,
         'n_epochs': 1000,
-        'batch_sz': 32,
+        'batch_sz': 128,
         'minibatch_sz': 8,
         'use_minibatching': False,
 
@@ -115,63 +111,21 @@ def main():
     
     lightning.seed_everything(cfg.seed, workers=True)
     torch.set_default_dtype(torch.float32)
-    
-    def sync_permutation(*tensors):
-        '''
-        In some cases we may have alist of values of a parameter, i.e. movement_onset,
-        where we have to preserve the correspondence bwtween this parameter and the train/valid/test datasets when shuffled.
-        IMPORTANT: this means that the "shuffle" parameter in the data loader SHOULD ALWAYS BE SET TO "False", for all regimes.
-        '''
-        permutated = ()
-        torch.manual_seed(cfg.seed)
-        permutation_indcs = torch.randperm(tensors[0].shape[0])
-        print(f"permutation indices: {permutation_indcs}")
-        for _, tensor in enumerate(tensors):
-            permutated += (tensor[permutation_indcs],)
-        lightning.seed_everything(cfg.seed, workers=True)
 
-        return permutated
 
     """load the data"""
     data_path = 'data/data_{split}_{bin_size_ms}ms.pt'
     train_data = torch.load(data_path.format(split='train', bin_size_ms=cfg.bin_sz_ms))
     val_data = torch.load(data_path.format(split='valid', bin_size_ms=cfg.bin_sz_ms))
     test_data = torch.load(data_path.format(split='test', bin_size_ms=cfg.bin_sz_ms))
-    
-    # obs: observations
-    y_train_obs = train_data['y_obs'].type(torch.float32).to(cfg.data_device)
-    y_valid_obs = val_data['y_obs'].type(torch.float32).to(cfg.data_device)
-    y_test_obs = test_data['y_obs'].type(torch.float32).to(cfg.data_device)
 
-    # l: label
-    labels = ['cursor_vel_x', 'cursor_vel_y']
-    l_train = torch.tensor(np.array([train_data[l] for l in labels])).permute(1, 2, 0).type(torch.float32).to(cfg.data_device)
-    l_valid = torch.tensor(np.array([val_data[l] for l in labels])).permute(1, 2, 0).type(torch.float32).to(cfg.data_device)
-    l_test = torch.tensor(np.array([test_data[l] for l in labels])).permute(1, 2, 0).type(torch.float32).to(cfg.data_device)
+    y_train_obs = train_data['y_obs'].type(torch.float32).to(cfg.data_device)[:, :cfg.n_bins_enc, :]
+    y_valid_obs = val_data['y_obs'].type(torch.float32).to(cfg.data_device)[:, :cfg.n_bins_enc, :]
+    y_test_obs = test_data['y_obs'].type(torch.float32).to(cfg.data_device)[:, :cfg.n_bins_enc, :]
 
-    # Time bins of the occurance of events. One of these, usually the one that was used to align the trials around, has a fixed value.
-    # IMPORTANT: These event names in this list should be the same as the keys in the train_data Dictionary.
-    events = ['EventGo_cue', 'EventMovement_start', 'EventMovement_end']
-    # Event names that appear on pltos
-    events_str = ['go cue', 'move\nstarts', 'move\nends']
-    # How to mark the time point where the perdection of the latents starts (just in the regime of unrolling the latents from a small number of time bins)
-    pred_str = ['pred\nstarts']
-    # b: behaviour
-    b_train = torch.tensor(np.array([train_data[b] for b in events])).permute(1, 0).type(torch.float32).to(cfg.data_device)
-    b_valid = torch.tensor(np.array([val_data[b] for b in events])).permute(1, 0).type(torch.float32).to(cfg.data_device)
-    b_test = torch.tensor(np.array([test_data[b] for b in events])).permute(1, 0).type(torch.float32).to(cfg.data_device)
-    
-    # Check for and apply any required sync shuffling.
-    if cfg.shuffle_train:
-        y_train_obs, l_train, b_train = sync_permutation(y_train_obs, l_train, b_train)
-    if cfg.shuffle_valid:
-        y_valid_obs, l_valid, b_valid = sync_permutation(y_valid_obs, l_valid, b_valid)
-    if cfg.shuffle_test:
-        y_test_obs, l_test, b_test = sync_permutation(y_test_obs, l_test, b_test)
-
-    y_train_dataset = torch.utils.data.TensorDataset(y_train_obs, l_train)
-    y_val_dataset = torch.utils.data.TensorDataset(y_valid_obs, l_valid)
-    y_test_dataset = torch.utils.data.TensorDataset(y_test_obs, l_test)
+    y_train_dataset = torch.utils.data.TensorDataset(y_train_obs, vel_train)
+    y_val_dataset = torch.utils.data.TensorDataset(y_valid_obs, vel_valid)
+    y_test_dataset = torch.utils.data.TensorDataset(y_test_obs, vel_test)
 
     # IMPORTANT:"shuffle" parameter in the data loader SHOULD ALWAYS BE SET TO "False", for all regimes.
     train_dataloader = torch.utils.data.DataLoader(
