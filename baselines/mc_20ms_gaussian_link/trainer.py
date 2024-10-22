@@ -122,11 +122,9 @@ def main():
                                           local_encoder, nl_filter, device=cfg.device)
     
     """lightning"""
-    #seq_vae = LightningMonkeyReaching(ssm, cfg, cfg.n_bins_enc, cfg.n_bins_bhv)
-    seq_vae = LightningNonlinearSSM(ssm, cfg)
-
-    #model_ckpt_path = 'ckpts/last.ckpt'
-    #seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
+    model_ckpt_path = 'ckpts/smoother/acausal/last-v7.ckpt'
+    seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
+    # seq_vae = LightningNonlinearSSM(ssm, cfg)
 
     csv_logger = CSVLogger('logs/smoother/acausal/',
                            name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
