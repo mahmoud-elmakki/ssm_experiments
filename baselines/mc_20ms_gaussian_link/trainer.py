@@ -9,10 +9,6 @@ from scipy.ndimage import gaussian_filter1d
 
 import matplotlib.pyplot as plt
 
-from matplotlib import cm
-from matplotlib.animation import FuncAnimation
-from mpl_toolkits.mplot3d import Axes3D
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as Fn
@@ -20,17 +16,12 @@ import pytorch_lightning as lightning
 
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, GradientAccumulationScheduler
-from pytorch_lightning.strategies import DeepSpeedStrategy
-from pytorch_lightning.strategies import DDPStrategy
-from pytorch_lightning.plugins.precision import deepspeed
 
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
 
 import xfads.utils as utils
 import xfads.prob_utils as prob_utils
-
-from xfads import plot_utils
 
 from xfads.ssm_modules.likelihoods import GaussianLikelihood
 from xfads.ssm_modules.dynamics import DenseGaussianDynamics
