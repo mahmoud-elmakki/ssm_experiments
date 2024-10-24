@@ -43,6 +43,9 @@ def main():
     initialize(version_base=None, config_path="", job_name="monkey_reaching")
     cfg = compose(config_name="config")
 
+    cfg.device = 'cpu'
+    cfg.data_device = 'cpu'
+
     lightning.seed_everything(cfg.seed, workers=True)
     torch.set_default_dtype(torch.float32)
 
@@ -57,15 +60,9 @@ def main():
     y_test_obs = test_data['y_obs'].type(torch.float32).to(cfg.data_device)[:, :cfg.n_bins_enc, :]
 
     """Gaussian-smoothed spike trains"""
-    y_train_obs = torch.tensor(
-        gaussian_filter1d(y_train_obs.cpu(), sigma=cfg.gaussian_kernel_ms // cfg.bin_sz_ms, axis=1)
-    )  # .to(cfg.data_device)
-    y_valid_obs = torch.tensor(
-        gaussian_filter1d(y_valid_obs.cpu(), sigma=cfg.gaussian_kernel_ms // cfg.bin_sz_ms, axis=1)
-    )  # .to(cfg.data_device)
-    y_test_obs = torch.tensor(
-        gaussian_filter1d(y_test_obs.cpu(), sigma=cfg.gaussian_kernel_ms // cfg.bin_sz_ms, axis=1)
-    )  # .to(cfg.data_device)
+    y_train_obs = torch.tensor( gaussian_filter1d(y_train_obs.cpu(), sigma=cfg.gaussian_kernel_sz // cfg.bin_sz_ms, axis=1))
+    y_valid_obs = torch.tensor(gaussian_filter1d(y_valid_obs.cpu(), sigma=cfg.gaussian_kernel_sz // cfg.bin_sz_ms, axis=1))
+    y_test_obs = torch.tensor(gaussian_filter1d(y_test_obs.cpu(), sigma=cfg.gaussian_kernel_sz // cfg.bin_sz_ms, axis=1))
 
     vel_train = torch.stack((train_data['cursor_vel_x'], train_data['cursor_vel_y']), dim=-1)[:, :cfg.n_bins_enc, :]
     vel_valid = torch.stack((val_data['cursor_vel_x'], val_data['cursor_vel_y']), dim=-1)[:, :cfg.n_bins_enc, :]
@@ -115,7 +112,7 @@ def main():
                                           local_encoder, nl_filter, device=cfg.device)
 
     """lightning"""
-    model_ckpt_path = '~/xfsds_experiments/baselines/mc_20ms_gaussian_link/ckpts/smoother/acausal/last-v1.ckpt'
+    model_ckpt_path = '~/xfsds_experiments/baselines/mc_20ms_gaussian_link/ckpts/smoother/acausal/last.ckpt'
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg,
                                                          n_time_bins_enc=cfg.n_bins_enc, bin_prd_start=cfg.n_bins_bhv,
                                                          strict=False)

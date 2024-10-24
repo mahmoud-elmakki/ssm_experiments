@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
+
+from torch import Tensor
 from tqdm import tqdm
 
 from hydra import compose, initialize
@@ -84,7 +86,7 @@ def main():
 
     """initial condition"""
     m_0 = torch.zeros(cfg.n_latents, device=cfg.device)
-    Q_0_diag = 1. * torch.ones(cfg.n_latents, device=cfg.device)
+    Q_0_diag: Tensor = 1. * torch.ones(cfg.n_latents, device=cfg.device)
     initial_condition_pdf = DenseGaussianInitialCondition(cfg.n_latents, m_0, Q_0_diag, device=cfg.device)
 
     """local/backward encoder"""
@@ -101,15 +103,15 @@ def main():
                                           local_encoder, nl_filter, device=cfg.device)
     
     """lightning"""
-    #model_ckpt_path = 'ckpts/smoother/acausal/last-v7.ckpt'
-    #seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
-    seq_vae = LightningNonlinearSSM(ssm, cfg)
+    model_ckpt_path = 'ckpts/smoother/acausal/last.ckpt'
+    seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
+    #seq_vae = LightningNonlinearSSM(ssm, cfg)
 
     csv_logger = CSVLogger('logs/smoother/acausal/',
                            name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
-                           version='smoother_acausal')
+                           version='v1')
 
-    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='valid_loss', mode='max',
+    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='valid_loss', mode='min',
                                     dirpath='ckpts/smoother/acausal/', save_last=True,
                                     filename='{epoch:0}_{valid_loss:0.2f}')
 

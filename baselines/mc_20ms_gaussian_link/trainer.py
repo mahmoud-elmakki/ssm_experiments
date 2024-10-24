@@ -56,13 +56,13 @@ def main():
 
     """Gaussian-smoothed spike trains"""
     y_train_obs = torch.tensor(
-        gaussian_filter1d(y_train_obs.cpu(), sigma=cfg.gaussian_kernel_ms//cfg.bin_sz_ms, axis=1)
+        gaussian_filter1d(y_train_obs.cpu(), sigma=cfg.gaussian_kernel_sz//cfg.bin_sz_ms, axis=1)
     )#.to(cfg.data_device)
     y_valid_obs = torch.tensor(
-        gaussian_filter1d(y_valid_obs.cpu(), sigma=cfg.gaussian_kernel_ms//cfg.bin_sz_ms, axis=1)
+        gaussian_filter1d(y_valid_obs.cpu(), sigma=cfg.gaussian_kernel_sz//cfg.bin_sz_ms, axis=1)
     )#.to(cfg.data_device)
     y_test_obs = torch.tensor(
-        gaussian_filter1d(y_test_obs.cpu(), sigma=cfg.gaussian_kernel_ms//cfg.bin_sz_ms, axis=1)
+        gaussian_filter1d(y_test_obs.cpu(), sigma=cfg.gaussian_kernel_sz//cfg.bin_sz_ms, axis=1)
     )#.to(cfg.data_device)
 
     vel_train = torch.stack((train_data['cursor_vel_x'], train_data['cursor_vel_y']), dim=-1)[:, :cfg.n_bins_enc, :]
@@ -113,15 +113,15 @@ def main():
                                           local_encoder, nl_filter, device=cfg.device)
     
     """lightning"""
-    model_ckpt_path = 'ckpts/smoother/acausal/last-v7.ckpt'
+    model_ckpt_path = 'ckpts/smoother/acausal/last.ckpt'
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
-    # seq_vae = LightningNonlinearSSM(ssm, cfg)
+    #seq_vae = LightningNonlinearSSM(ssm, cfg)
 
     csv_logger = CSVLogger('logs/smoother/acausal/',
                            name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
-                           version='smoother_acausal')
+                           version='v1')
 
-    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='valid_loss', mode='max',
+    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='valid_loss', mode='min',
                                     dirpath='ckpts/smoother/acausal/', save_last=True,
                                     filename='{epoch:0}_{valid_loss:0.2f}')
 

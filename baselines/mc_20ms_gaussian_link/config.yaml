@@ -14,7 +14,7 @@ n_hidden_backward: 128
 
 # --- hyperparameters --- #
 use_cd: False
-p_mask_a: 0.4
+p_mask_a: 0.2
 p_mask_b: 0.0
 p_mask_apb: 0.0
 p_mask_y_in: 0.0
@@ -32,6 +32,8 @@ batch_sz: 256
 # --- misc --- #
 bin_sz: 20e-3
 bin_sz_ms: 20
+
+gaussian_kernel_sz: 80 #ms
 
 n_bins: 45
 n_bins_enc: 45
