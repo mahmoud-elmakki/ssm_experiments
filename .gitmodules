@@ -1,6 +1,3 @@
 [submodule "xfads"]
 	path = xfads
 	url = https://github.com/catniplab/xfads.git
-[submodule "NeuroTask"]
-	path = NeuroTask
-	url = https://github.com/catniplab/NeuroTask.git

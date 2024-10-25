@@ -101,7 +101,8 @@ def main():
     """sequence vae"""
     ssm = LowRankNonlinearStateSpaceModel(dynamics_mod, likelihood_pdf, initial_condition_pdf, backward_encoder,
                                           local_encoder, nl_filter, device=cfg.device)
-    
+
+    '''
     """lightning"""
     model_ckpt_path = 'ckpts/smoother/acausal/last.ckpt'
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
@@ -118,6 +119,96 @@ def main():
     trainer = lightning.Trainer(accelerator="gpu",
                                 strategy="ddp",
                                 max_epochs=cfg.n_epochs,
+                                gradient_clip_val=1.0,
+                                default_root_dir='lightning/',
+                                callbacks=[ckpt_callback],
+                                logger=csv_logger,
+                                )
+
+    trainer.fit(model=seq_vae, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
+    torch.save(ckpt_callback.best_model_path, 'ckpts/smoother/acausal/best_model_path.pt')
+    trainer.test(dataloaders=test_dataloader, ckpt_path='last')
+    '''
+
+    #seq_vae = LightningMonkeyReaching(ssm, cfg, cfg.n_bins_enc, cfg.n_bins_bhv)
+
+    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_poisson_link/ckpts/smoother/acausal/epoch=677_valid_loss=10628.55_r2_valid_enc=0.47_r2_valid_bhv=0.00_valid_bps_enc=0.13.ckpt'
+    seq_vae = LightningMonkeyReaching.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg,
+                                                           n_time_bins_enc=cfg.n_bins_enc,
+                                                           n_time_bins_bhv=cfg.n_bins_bhv,
+                                                           strict=False)
+
+    csv_logger = CSVLogger('logs/smoother/acausal/',
+                           name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
+                           version='0.0mask')
+
+    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='r2_valid_enc', mode='max', dirpath='ckpts/smoother/acausal/',
+                                    save_last=True,
+                                    filename='{epoch:0}_{valid_loss:0.2f}_{r2_valid_enc:0.2f}_{r2_valid_prd:0.2f}_{valid_bps_enc:0.2f}')
+
+    trainer = lightning.Trainer(max_epochs=cfg.n_epochs,
+                                accelerator=cfg.device,
+                                strategy="ddp",
+                                gradient_clip_val=1.0,
+                                default_root_dir='lightning/',
+                                callbacks=[ckpt_callback],
+                                logger=csv_logger,
+                                )
+
+    trainer.fit(model=seq_vae, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
+    torch.save(ckpt_callback.best_model_path, 'ckpts/smoother/acausal/best_model_path.pt')
+    trainer.test(dataloaders=test_dataloader, ckpt_path='last')
+
+    cfg.p_mask_a = 0.2
+    cfg.n_epochs = 500
+
+    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
+    seq_vae = LightningMonkeyReaching.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
+                                                           n_time_bins_enc=cfg.n_bins_enc,
+                                                           n_time_bins_bhv=cfg.n_bins_bhv,
+                                                           strict=False)
+
+    csv_logger = CSVLogger('logs/smoother/acausal/',
+                           name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
+                           version='0.2mask')
+
+    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='r2_valid_enc', mode='max', dirpath='ckpts/smoother/acausal/',
+                                    save_last=True,
+                                    filename='{epoch:0}_{valid_loss:0.2f}_{r2_valid_enc:0.2f}_{r2_valid_bhv:0.2f}_{valid_bps_enc:0.2f}')
+
+    trainer = lightning.Trainer(max_epochs=cfg.n_epochs,
+                                accelerator=cfg.device,
+                                strategy="ddp",
+                                gradient_clip_val=1.0,
+                                default_root_dir='lightning/',
+                                callbacks=[ckpt_callback],
+                                logger=csv_logger,
+                                )
+
+    trainer.fit(model=seq_vae, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
+    torch.save(ckpt_callback.best_model_path, 'ckpts/smoother/acausal/best_model_path.pt')
+    trainer.test(dataloaders=test_dataloader, ckpt_path='last')
+
+    cfg.p_mask_a = 0.4
+    cfg.n_epochs = 500
+
+    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
+    seq_vae = LightningMonkeyReaching.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
+                                                           n_time_bins_enc=cfg.n_bins_enc,
+                                                           n_time_bins_bhv=cfg.n_bins_bhv,
+                                                           strict=False)
+
+    csv_logger = CSVLogger('logs/smoother/acausal/',
+                           name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
+                           version='0.4mask')
+
+    ckpt_callback = ModelCheckpoint(save_top_k=3, monitor='r2_valid_enc', mode='max', dirpath='ckpts/smoother/acausal/',
+                                    save_last=True,
+                                    filename='{epoch:0}_{valid_loss:0.2f}_{r2_valid_enc:0.2f}_{r2_valid_bhv:0.2f}_{valid_bps_enc:0.2f}')
+
+    trainer = lightning.Trainer(max_epochs=cfg.n_epochs,
+                                accelerator=cfg.device,
+                                strategy="ddp",
                                 gradient_clip_val=1.0,
                                 default_root_dir='lightning/',
                                 callbacks=[ckpt_callback],
