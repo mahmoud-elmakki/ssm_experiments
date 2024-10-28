@@ -112,9 +112,8 @@ def main():
     ssm = LowRankNonlinearStateSpaceModel(dynamics_mod, likelihood_pdf, initial_condition_pdf, backward_encoder,
                                           local_encoder, nl_filter, device=cfg.device)
 
-    '''
     """lightning"""
-    model_ckpt_path = "/home/makki/xfsds_experiments/baselines/mc_20ms_gaussian_link/ckpts/smoother/acausal/epoch=728_valid_loss=2116.46.ckpt"
+    model_ckpt_path = "/home/makki/xfsds_experiments/mc_20ms_gaussian_link/ckpts/smoother/acausal/epoch=980_valid_loss=3564.10.ckpt"
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg, n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv, strict=False)
     #seq_vae = LightningNonlinearSSM(ssm, cfg)
 
@@ -138,13 +137,12 @@ def main():
     trainer.fit(model=seq_vae, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
     torch.save(ckpt_callback.best_model_path, 'ckpts/smoother/acausal/best_model_path.pt')
     trainer.test(dataloaders=test_dataloader, ckpt_path='last')
-    '''
 
     cfg.p_mask_a = 0.2
-    cfg.n_epochs = 500
+    cfg.n_epochs = 5
 
     """lightning"""
-    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_gaussian_link/ckpts/smoother/acausal/best_model_path.pt'
+    model_ckpt_path = '/home/makki/xfsds_experiments/mc_20ms_gaussian_link/ckpts/smoother/acausal/best_model_path.pt'
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
                                                          n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv,
                                                          strict=False)
@@ -171,10 +169,10 @@ def main():
     trainer.test(dataloaders=test_dataloader, ckpt_path='last')
 
     cfg.p_mask_a = 0.4
-    cfg.n_epochs = 500
+    cfg.n_epochs = 5
 
     """lightning"""
-    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_gaussian_link/ckpts/smoother/acausal/best_model_path.pt'
+    model_ckpt_path = '/home/makki/xfsds_experiments/mc_20ms_gaussian_link/ckpts/smoother/acausal/best_model_path.pt'
     seq_vae = LightningNonlinearSSM.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
                                                          n_time_bins_enc=cfg.n_bins_enc, n_time_bins_bhv=cfg.n_bins_bhv,
                                                          strict=False)

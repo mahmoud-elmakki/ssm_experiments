@@ -130,7 +130,12 @@ def main():
     trainer.test(dataloaders=test_dataloader, ckpt_path='last')
     '''
 
-    seq_vae = LightningMonkeyReaching(ssm, cfg, cfg.n_bins_enc, cfg.n_bins_bhv)
+    #seq_vae = LightningMonkeyReaching(ssm, cfg, cfg.n_bins_enc, cfg.n_bins_bhv)
+    model_ckpt_path = '/home/makki/xfsds_experiments/mc_20ms_poisson_link/ckpts/smoother/acausal/epoch=845_valid_loss=10795.06_r2_valid_enc=0.36_r2_valid_prd=-0.02_valid_bps_enc=0.12.ckpt'
+    seq_vae = LightningMonkeyReaching.load_from_checkpoint(model_ckpt_path, ssm=ssm, cfg=cfg,
+                                                           n_time_bins_enc=cfg.n_bins_enc,
+                                                           n_time_bins_bhv=cfg.n_bins_bhv,
+                                                           strict=False)
 
     csv_logger = CSVLogger('logs/smoother/acausal/',
                            name=f'sd_{cfg.seed}_r_y_{cfg.rank_local}_r_b_{cfg.rank_backward}',
@@ -156,7 +161,7 @@ def main():
     cfg.p_mask_a = 0.2
     cfg.n_epochs = 500
 
-    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
+    model_ckpt_path = '/home/makki/xfsds_experiments/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
     seq_vae = LightningMonkeyReaching.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
                                                            n_time_bins_enc=cfg.n_bins_enc,
                                                            n_time_bins_bhv=cfg.n_bins_bhv,
@@ -186,7 +191,7 @@ def main():
     cfg.p_mask_a = 0.4
     cfg.n_epochs = 500
 
-    model_ckpt_path = '/home/makki/xfsds_experiments/baselines/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
+    model_ckpt_path = '/home/makki/xfsds_experiments/mc_20ms_poisson_link/ckpts/smoother/acausal/best_model_path.pt'
     seq_vae = LightningMonkeyReaching.load_from_checkpoint(torch.load(model_ckpt_path), ssm=ssm, cfg=cfg,
                                                            n_time_bins_enc=cfg.n_bins_enc,
                                                            n_time_bins_bhv=cfg.n_bins_bhv,
